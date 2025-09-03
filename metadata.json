@@ -1,0 +1,5 @@
+{
+  "name": "AI Image Reference Editor",
+  "description": "An AI-powered image editor using Gemini (Nano Banana) to modify images based on text prompts, style references, and pose sketches.",
+  "requestFramePermissions": []
+}
