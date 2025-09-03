@@ -1,11 +1,7 @@
 import { GoogleGenAI, Modality, GenerateContentResponse } from "@google/genai";
 import type { EditImageParams, Angle } from '../types';
 
-if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable is not set.");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 const dataUrlToBase64 = (dataUrl: string): string => {
     return dataUrl.split(',')[1];
