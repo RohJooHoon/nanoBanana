@@ -24,7 +24,7 @@ Follow these instructions to set up and run the project on your local machine.
 - [Node.js](https://nodejs.org/) (v18 or later recommended)
 - A package manager like `npm` or `yarn`
 
-### 🛠️ Setup and Configuration
+### 🛠️ Setup and Run
 
 1.  **Clone the repository:**
     ```bash
@@ -37,48 +37,22 @@ Follow these instructions to set up and run the project on your local machine.
     npm install
     ```
 
-3.  **Set up Environment Variables:**
-
-    You will need to get two different keys from Google Cloud:
-    -   **Gemini API Key**: Authorizes your application to use the Gemini API.
-    -   **Google Client ID**: Authorizes your application to use Google Sign-In.
-
-    Create a file named `.env` in the root of your project and add the following variables:
-
-    ```env
-    # For authorizing calls to the Gemini API
-    API_KEY=YOUR_GEMINI_API_KEY
-
-    # For Google Sign-In authentication
-    GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
-    ```
-
-    **How to get the keys:**
-
-    *   **`API_KEY` (Gemini):**
-        1.  Go to [Google AI Studio](https://aistudio.google.com/).
-        2.  Click on **"Get API key"** and create a new API key in a project.
-        3.  Copy the key and paste it into your `.env` file.
-
-    *   **`GOOGLE_CLIENT_ID` (Google Sign-In):**
-        1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
-        2.  Create a new project or select an existing one.
-        3.  Navigate to **"APIs & Services" > "Credentials"**.
-        4.  Click **"+ CREATE CREDENTIALS"** and select **"OAuth client ID"**.
-        5.  Choose **"Web application"** as the application type.
-        6.  Under **"Authorized JavaScript origins"**, add your local development URL (e.g., `http://localhost:8080`, `http://localhost:3000`).
-        7.  Click **"CREATE"**.
-        8.  Copy the **Client ID** and paste it into your `.env` file.
-
-4.  **Run the development server:**
+3.  **Run the development server:**
     ```bash
     npm run dev 
     ```
     Open your browser and navigate to the local URL provided by your development server.
 
+### 📝 Configuration Note
+
+This project is set up to run without any initial configuration files. However, to enable the core features, you will need to configure two things:
+
+-   **Google Sign-In**: To make the login functional, you must replace the placeholder Google Client ID in `src/contexts/AuthContext.tsx` with your own. You can obtain one from the [Google Cloud Console](https://console.cloud.google.com/).
+-   **Gemini API**: The application requires a Gemini API key to be available as an environment variable (`API_KEY`) in its deployment environment. For local development, you would typically use a tool like `dotenv` and a `.env.local` file. You can get an API key from [Google AI Studio](https://aistudio.google.com/).
+
 ## 🕹️ How to Use the App
 
-1.  **Sign In**: Click the "Sign in with Google" button to authenticate.
+1.  **Sign In**: Click the "Sign in with Google" button to authenticate (requires Client ID configuration).
 2.  **Upload Base Image**: Start by uploading the main image you want to edit. This is a required step.
 3.  **Provide Instructions**: Use any combination of the following optional inputs:
     *   **Prompt**: Describe the changes you want to see (e.g., "turn the cat into an astronaut").

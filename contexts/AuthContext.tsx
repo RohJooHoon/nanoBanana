@@ -61,12 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Effect for initializing the Google Sign-In client
   useEffect(() => {
-    // In a real application, the GOOGLE_CLIENT_ID should be stored in an environment variable.
-    // For this example, a placeholder is used. You must replace it with your own for Sign-In to work.
-    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+    // DEVELOPER: Replace this placeholder with your actual Google Client ID for Sign-In to work.
+    // You can get one from the Google Cloud Console: https://console.cloud.google.com/
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
     
     if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
-      console.warn("Using a placeholder GOOGLE_CLIENT_ID. Google Sign-In will not function until you replace it with your own client ID in contexts/AuthContext.tsx.");
+      console.warn(`
+        ==================================================================================
+        [ATTENTION] Google Sign-In is not configured. 
+        
+        To enable login, you must replace the placeholder 'GOOGLE_CLIENT_ID'
+        in the file 'contexts/AuthContext.tsx' with your actual Google Client ID.
+        
+        For instructions, visit: https://console.cloud.google.com/
+        ==================================================================================
+      `);
     }
     
     const initializeGsi = () => {
@@ -76,8 +85,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           callback: handleCredentialResponse,
         });
         setIsInitialized(true);
-        // You can uncomment the line below to enable automatic sign-in prompt on page load.
-        // window.google.accounts.id.prompt();
       } else {
         setTimeout(initializeGsi, 100);
       }
@@ -91,7 +98,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isInitialized && !user) {
       const signInButtonContainer = document.getElementById('google-signin-button-container');
       if (signInButtonContainer) {
-        // Clear the container to avoid rendering multiple buttons, e.g., on fast state changes.
         signInButtonContainer.innerHTML = '';
         window.google.accounts.id.renderButton(signInButtonContainer, {
           theme: 'outline',
