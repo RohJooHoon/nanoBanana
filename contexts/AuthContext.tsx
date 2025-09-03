@@ -37,7 +37,7 @@ const simpleJwtDecode = (token: string): any => {
     }
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode; clientId: string; }> = ({ children, clientId }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
@@ -61,44 +61,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Effect for initializing the Google Sign-In client
   useEffect(() => {
-    // DEVELOPER: Replace this placeholder with your actual Google Client ID for Sign-In to work.
-    // You can get one from the Google Cloud Console: https://console.cloud.google.com/
-    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-    
-    if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
-      console.warn(`
-        ==================================================================================
-        [ATTENTION] Google Sign-In is not configured. 
-        
-        To enable login, you must replace the placeholder 'GOOGLE_CLIENT_ID'
-        in the file 'contexts/AuthContext.tsx' with your actual Google Client ID.
-        
-        For instructions, visit: https://console.cloud.google.com/
-        ==================================================================================
-      `);
-    }
-    
     const initializeGsi = () => {
       if (window.google && window.google.accounts) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-        });
-        setIsInitialized(true);
+        try {
+            window.google.accounts.id.initialize({
+              client_id: clientId,
+              callback: handleCredentialResponse,
+            });
+            setIsInitialized(true);
+        } catch (error) {
+            console.error("Google Sign-In initialization failed:", error);
+            // You could potentially clear the saved config here to force re-entry
+        }
       } else {
         setTimeout(initializeGsi, 100);
       }
     };
 
-    initializeGsi();
-  }, [handleCredentialResponse]);
+    if (clientId) {
+        initializeGsi();
+    }
+  }, [clientId, handleCredentialResponse]);
 
   // Effect for rendering the Google Sign-In button
   useEffect(() => {
     if (isInitialized && !user) {
       const signInButtonContainer = document.getElementById('google-signin-button-container');
       if (signInButtonContainer) {
-        signInButtonContainer.innerHTML = '';
+        signInButtonContainer.innerHTML = ''; // Clear previous button
         window.google.accounts.id.renderButton(signInButtonContainer, {
           theme: 'outline',
           size: 'large',

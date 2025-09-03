@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { DrawingCanvas } from './components/DrawingCanvas';
@@ -7,9 +7,15 @@ import { Spinner } from './components/Spinner';
 import { Icon } from './components/Icon';
 import type { ImageData, Angle } from './types';
 import { editImage } from './services/geminiService';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth, AuthProvider } from './contexts/AuthContext';
+import { ConfigScreen } from './components/ConfigScreen';
 
-const App: React.FC = () => {
+interface AppConfig {
+  apiKey: string;
+  googleClientId: string;
+}
+
+const EditorUI: React.FC<{ apiKey: string }> = ({ apiKey }) => {
   const { user, isInitialized } = useAuth();
 
   const [baseImage, setBaseImage] = useState<ImageData | null>(null);
@@ -47,7 +53,7 @@ const App: React.FC = () => {
       if (!baseImage) {
         throw new Error("Base image is required.");
       }
-      const results = await editImage({
+      const results = await editImage(apiKey, {
         baseImage,
         prompt,
         styleImages,
@@ -63,7 +69,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [baseImage, prompt, styleImages, poseDrawing, poseImages, activeAngle, isGenerationDisabled]);
+  }, [apiKey, baseImage, prompt, styleImages, poseDrawing, poseImages, activeAngle, isGenerationDisabled]);
 
   if (!isInitialized) {
     return (
@@ -189,6 +195,38 @@ const App: React.FC = () => {
         </main>
       )}
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  const [config, setConfig] = useState<AppConfig | null>(() => {
+    try {
+      const storedConfig = localStorage.getItem('app-config');
+      return storedConfig ? JSON.parse(storedConfig) : null;
+    } catch (error) {
+      console.error("Failed to parse config from localStorage", error);
+      return null;
+    }
+  });
+
+  const handleConfigSave = (newConfig: AppConfig) => {
+    localStorage.setItem('app-config', JSON.stringify(newConfig));
+    setConfig(newConfig);
+  };
+  
+  const handleConfigClear = () => {
+    localStorage.removeItem('app-config');
+    setConfig(null);
+  }
+
+  if (!config) {
+    return <ConfigScreen onSave={handleConfigSave} />;
+  }
+
+  return (
+    <AuthProvider clientId={config.googleClientId}>
+       <EditorUI apiKey={config.apiKey} />
+    </AuthProvider>
   );
 };
 

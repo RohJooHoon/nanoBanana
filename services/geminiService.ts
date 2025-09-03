@@ -1,8 +1,6 @@
 import { GoogleGenAI, Modality, GenerateContentResponse } from "@google/genai";
 import type { EditImageParams, Angle } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
 const dataUrlToBase64 = (dataUrl: string): string => {
     return dataUrl.split(',')[1];
 };
@@ -18,7 +16,7 @@ const getAngleInstruction = (angle: Angle): string => {
     return angle ? instructions[angle] : '';
 };
 
-const generateSingleImage = async (parts: any[]): Promise<GenerateContentResponse> => {
+const generateSingleImage = async (ai: GoogleGenAI, parts: any[]): Promise<GenerateContentResponse> => {
     return ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
         contents: { parts },
@@ -28,8 +26,10 @@ const generateSingleImage = async (parts: any[]): Promise<GenerateContentRespons
     });
 }
 
-export const editImage = async (params: EditImageParams): Promise<string[]> => {
+export const editImage = async (apiKey: string, params: EditImageParams): Promise<string[]> => {
     const { baseImage, prompt, styleImages, poseDrawing, poseImages, angle } = params;
+
+    const ai = new GoogleGenAI({ apiKey });
 
     const parts: any[] = [];
     
@@ -85,7 +85,7 @@ export const editImage = async (params: EditImageParams): Promise<string[]> => {
     }
 
     try {
-        const generationPromises = Array(4).fill(0).map(() => generateSingleImage(parts));
+        const generationPromises = Array(4).fill(0).map(() => generateSingleImage(ai, parts));
         const responses = await Promise.all(generationPromises);
 
         const imageUrls = responses.map((response, index) => {
