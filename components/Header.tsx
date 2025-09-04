@@ -32,8 +32,14 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-4">
             {isInitialized && user ? (
                  <div className="relative" ref={dropdownRef}>
-                    <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="rounded-full overflow-hidden w-10 h-10 border-2 border-cyan-400 hover:border-purple-500 transition-colors">
-                        <img src={user.picture} alt="User avatar" referrerPolicy="no-referrer" />
+                    <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="rounded-full overflow-hidden w-10 h-10 border-2 border-cyan-400 hover:border-purple-500 transition-colors bg-gray-600">
+                        {user.picture ? (
+                           <img src={user.picture} alt="User avatar" referrerPolicy="no-referrer" className="w-full h-full object-cover"/>
+                        ) : (
+                           <div className="w-full h-full flex items-center justify-center">
+                               <Icon.User className="w-6 h-6 text-gray-300" />
+                           </div>
+                        )}
                     </button>
                     {isDropdownOpen && (
                         <div className="absolute right-0 mt-2 w-64 bg-gray-700 rounded-lg shadow-xl py-2 z-20 border border-gray-600">

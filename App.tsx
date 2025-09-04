@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { DrawingCanvas } from './components/DrawingCanvas';
@@ -6,8 +6,8 @@ import { AngleControls } from './components/AngleControls';
 import { Spinner } from './components/Spinner';
 import { Icon } from './components/Icon';
 import type { ImageData, Angle } from './types';
-import { editImage } from './services/geminiService';
-import { useAuth, AuthProvider } from './contexts/AuthContext';
+import { editImage, translateText } from './services/geminiService';
+import { useAuth, AuthProvider, AuthContext } from './contexts/AuthContext';
 import { ConfigScreen } from './components/ConfigScreen';
 
 interface AppConfig {
@@ -21,6 +21,10 @@ const EditorUI: React.FC<{ apiKey: string }> = ({ apiKey }) => {
   const [baseImage, setBaseImage] = useState<ImageData | null>(null);
   const [styleImages, setStyleImages] = useState<ImageData[]>([]);
   const [prompt, setPrompt] = useState<string>('');
+  const [translatedPrompt, setTranslatedPrompt] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const [poseDrawing, setPoseDrawing] = useState<string | null>(null);
   const [poseImages, setPoseImages] = useState<ImageData[]>([]);
   const [activeAngle, setActiveAngle] = useState<Angle>(null);
@@ -28,6 +32,47 @@ const EditorUI: React.FC<{ apiKey: string }> = ({ apiKey }) => {
   const [outputImages, setOutputImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const trimmedPrompt = prompt.trim();
+    
+    if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+    }
+
+    if (!trimmedPrompt) {
+        setTranslatedPrompt(null);
+        setIsTranslating(false);
+        return;
+    }
+
+    const isKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(trimmedPrompt);
+
+    if (isKorean) {
+        setIsTranslating(true);
+        debounceTimeout.current = setTimeout(async () => {
+            try {
+                const translated = await translateText(apiKey, trimmedPrompt);
+                setTranslatedPrompt(translated);
+            } catch (err) {
+                console.error("Translation failed, using original prompt.", err);
+                setTranslatedPrompt(trimmedPrompt);
+            } finally {
+                setIsTranslating(false);
+            }
+        }, 500);
+    } else {
+        setIsTranslating(false);
+        setTranslatedPrompt(trimmedPrompt);
+    }
+
+    return () => {
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+    };
+  }, [prompt, apiKey]);
+
 
   const handleBaseImageChange = (images: ImageData[]) => {
     setBaseImage(images[0] || null);
@@ -53,9 +98,10 @@ const EditorUI: React.FC<{ apiKey: string }> = ({ apiKey }) => {
       if (!baseImage) {
         throw new Error("Base image is required.");
       }
+      const finalPrompt = translatedPrompt || prompt;
       const results = await editImage(apiKey, {
         baseImage,
-        prompt,
+        prompt: finalPrompt,
         styleImages,
         poseDrawing,
         poseImages,
@@ -69,7 +115,7 @@ const EditorUI: React.FC<{ apiKey: string }> = ({ apiKey }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiKey, baseImage, prompt, styleImages, poseDrawing, poseImages, activeAngle, isGenerationDisabled]);
+  }, [apiKey, baseImage, prompt, styleImages, poseDrawing, poseImages, activeAngle, isGenerationDisabled, translatedPrompt]);
 
   if (!isInitialized) {
     return (
@@ -95,12 +141,30 @@ const EditorUI: React.FC<{ apiKey: string }> = ({ apiKey }) => {
 
             <div>
               <label className="block text-lg font-semibold mb-2">2. Prompt (Optional)</label>
+              <p className="text-sm text-gray-400 mb-2 -mt-1">
+                Korean input will be automatically translated to English.
+              </p>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="e.g., Make the character a cyberpunk warrior..."
                 className="w-full h-28 p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
               />
+              {(isTranslating || (translatedPrompt && prompt)) && (
+                <div className="mt-2 p-3 bg-gray-700/50 rounded-lg text-sm border border-gray-600">
+                  {isTranslating ? (
+                    <div className="flex items-center gap-2 text-gray-400 animate-pulse">
+                      <Spinner className="w-4 h-4" />
+                      <span>Translating to English...</span>
+                    </div>
+                  ) : translatedPrompt ? (
+                    <div>
+                      <p className="font-semibold text-cyan-400 mb-1">Prompt to be used by AI:</p>
+                      <p className="text-gray-300 whitespace-pre-wrap font-mono">{translatedPrompt}</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
 
             <div>
@@ -198,7 +262,7 @@ const EditorUI: React.FC<{ apiKey: string }> = ({ apiKey }) => {
   );
 };
 
-const App: React.FC = () => {
+const StandardApp: React.FC = () => {
   const [config, setConfig] = useState<AppConfig | null>(() => {
     try {
       const storedConfig = localStorage.getItem('app-config');
@@ -213,11 +277,6 @@ const App: React.FC = () => {
     localStorage.setItem('app-config', JSON.stringify(newConfig));
     setConfig(newConfig);
   };
-  
-  const handleConfigClear = () => {
-    localStorage.removeItem('app-config');
-    setConfig(null);
-  }
 
   if (!config) {
     return <ConfigScreen onSave={handleConfigSave} />;
@@ -228,6 +287,27 @@ const App: React.FC = () => {
        <EditorUI apiKey={config.apiKey} />
     </AuthProvider>
   );
+}
+
+const App: React.FC = () => {
+  if (process.env.API_KEY) {
+    const aiStudioAuthContext = {
+      user: {
+        name: 'AI Studio User',
+        email: 'user@aistudio.google.com',
+        picture: '',
+      },
+      signOut: () => {},
+      isInitialized: true,
+    };
+    return (
+       <AuthContext.Provider value={aiStudioAuthContext}>
+        <EditorUI apiKey={process.env.API_KEY} />
+      </AuthContext.Provider>
+    );
+  }
+
+  return <StandardApp />;
 };
 
 export default App;

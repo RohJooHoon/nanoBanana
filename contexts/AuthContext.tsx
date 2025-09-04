@@ -19,7 +19,7 @@ interface AuthContextType {
   isInitialized: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // A simple function to decode the JWT payload without needing a full library.
 // We don't need to verify the signature since we get it directly from Google's script.

@@ -1,6 +1,30 @@
 import { GoogleGenAI, Modality, GenerateContentResponse } from "@google/genai";
 import type { EditImageParams, Angle } from '../types';
 
+export const translateText = async (apiKey: string, text: string): Promise<string> => {
+    if (!text.trim()) {
+        return "";
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Translate the following text to English. If it is already in English, simply return the original text without any modification or extra phrases. Text: "${text}"`,
+            config: {
+                thinkingConfig: { thinkingBudget: 0 }
+            }
+        });
+
+        return response.text.trim();
+    } catch (error) {
+        console.error("Translation Error:", error);
+        // Fallback to original text if translation fails
+        return text;
+    }
+};
+
 const dataUrlToBase64 = (dataUrl: string): string => {
     return dataUrl.split(',')[1];
 };
